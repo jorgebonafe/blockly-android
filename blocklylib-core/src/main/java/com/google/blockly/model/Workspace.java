@@ -99,6 +99,7 @@ public class Workspace {
         }
         mRootBlocks.add(block);
         if (isNewBlock) {
+            block.setEventWorkspaceId(getId());
             mStats.collectStats(block, true);
         }
     }
@@ -113,8 +114,11 @@ public class Workspace {
      */
     public boolean removeRootBlock(Block block, boolean cleanupStats) {
         boolean foundAndRemoved = mRootBlocks.remove(block);
-        if (foundAndRemoved && cleanupStats) {
-            mStats.cleanupStats(block);
+        if (foundAndRemoved) {
+            block.setEventWorkspaceId(null);
+            if (cleanupStats) {
+                mStats.cleanupStats(block);
+            }
         }
         return foundAndRemoved;
     }
@@ -126,7 +130,9 @@ public class Workspace {
      */
     // TODO(#56): Make sure the block doesn't have a parent.
     public void addBlockToTrash(Block block) {
-        mTrashCategory.addItem(0, new BlocklyCategory.BlockItem(block));
+        BlocklyCategory.BlockItem blockItem = new BlocklyCategory.BlockItem(block);
+        blockItem.getBlock().setEventWorkspaceId(BlocklyEvent.WORKSPACE_ID_TRASH);
+        mTrashCategory.addItem(0, blockItem);
     }
 
     /**
@@ -142,6 +148,7 @@ public class Workspace {
             throw new IllegalArgumentException("trashedBlock not found in mTrashCategory");
         }
         mRootBlocks.add(trashedBlock);
+        trashedBlock.setEventWorkspaceId(getId());
     }
 
     /**
@@ -171,7 +178,7 @@ public class Workspace {
      *                               BlockLoadingException.
      */
     public void loadToolboxContents(InputStream source) throws BlockLoadingException {
-        mFlyoutCategory = BlocklyXmlHelper.loadToolboxFromXml(source, mBlockFactory);
+        mFlyoutCategory = BlocklyXmlHelper.loadToolboxFromXml(source, mBlockFactory, BlocklyEvent.WORKSPACE_ID_TOOLBOX);
     }
 
     /**
@@ -195,7 +202,7 @@ public class Workspace {
      *                               BlockLoadingException.
      */
     public void loadTrashContents(InputStream source) throws BlockLoadingException {
-        mTrashCategory = BlocklyXmlHelper.loadToolboxFromXml(source, mBlockFactory);
+        mTrashCategory = BlocklyXmlHelper.loadToolboxFromXml(source, mBlockFactory, BlocklyEvent.WORKSPACE_ID_TRASH);
     }
 
     /**
@@ -314,6 +321,13 @@ public class Workspace {
      */
     public NameManager getVariableNameManager() {
         return mVariableNameManager;
+    }
+
+    /**
+     * @return The {@link ProcedureManager} being used by this workspace.
+     */
+    public ProcedureManager getProcedureManager() {
+        return mProcedureManager;
     }
 
     /**
