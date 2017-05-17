@@ -23,12 +23,14 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
+import android.support.v7.widget.PopupMenu;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import com.google.blockly.android.R;
 import com.google.blockly.android.ui.BlockListUI;
 import com.google.blockly.android.ui.CategorySelectorUI;
 import com.google.blockly.android.WorkspaceFragment;
@@ -40,6 +42,7 @@ import com.google.blockly.android.ui.BlockTouchHandler;
 import com.google.blockly.android.ui.BlockView;
 import com.google.blockly.android.ui.BlockViewFactory;
 import com.google.blockly.android.ui.InputView;
+import com.google.blockly.android.ui.NonPropagatingViewGroup;
 import com.google.blockly.android.ui.PendingDrag;
 import com.google.blockly.android.ui.ViewPoint;
 import com.google.blockly.android.ui.VirtualWorkspaceView;
@@ -58,6 +61,7 @@ import com.google.blockly.model.FieldVariable;
 import com.google.blockly.model.Input;
 import com.google.blockly.model.Mutator;
 import com.google.blockly.model.Workspace;
+import com.google.blockly.utils.BlockClickListener;
 import com.google.blockly.utils.BlockLoadingException;
 
 import java.io.ByteArrayInputStream;
@@ -81,6 +85,8 @@ public class BlocklyController {
 
     private static final String SNAPSHOT_BUNDLE_KEY = "com.google.blockly.snapshot";
     private static final String SERIALIZED_WORKSPACE_KEY = "SERIALIZED_WORKSPACE";
+
+    private BlockClickListener blockClickListener;
 
     /**
      * Callback interface for {@link BlocklyEvent}s.
@@ -140,6 +146,14 @@ public class BlocklyController {
         }
     };
 
+    public void setBlockClickListener(BlockClickListener bcl) {
+        blockClickListener = bcl;
+    }
+
+    public BlockClickListener getBlockClickListener() {
+        return blockClickListener;
+    }
+
     private final Dragger.DragHandler mWorkspaceDragHandler = new Dragger.DragHandler() {
         @Override
         public Runnable maybeGetDragGroupCreator(final PendingDrag pendingDrag) {
@@ -180,10 +194,21 @@ public class BlocklyController {
 
         @Override
         public boolean onBlockClicked(PendingDrag pendingDrag) {
-            // TODO(#35): Mark block as focused / selected.
+            try {
+                if (blockClickListener!=null)
+                    blockClickListener.blockClicked(pendingDrag.getTouchedBlockView());
+            }
+            catch (Exception e) {}
             return false;
         }
     };
+
+    public void copyBlock(Block block) {
+        Block newBlock = block.deepCopy();
+        newBlock.setPosition(block.getPosition().x+50,block.getPosition().y+50);
+        addRootBlock(newBlock);
+    }
+
     private final BlockTouchHandler mTouchHandler;
 
     /**
